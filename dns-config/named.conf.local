@@ -1,0 +1,18 @@
+//
+// Do any local configuration here
+//
+// Consider adding the 1918 zones here, if they are not used in your
+// organization
+//include "/etc/bind/zones.rfc1918";
+include "/etc/bind/ddns-key.conf";
+
+zone "laranjeira.xyz" IN { // define the forward zone
+        type master;
+        file "/etc/bind/zones/laranjeira.xyz";
+        allow-update { key "ddns-key"; };
+};
+zone "0.168.192.in-addr.arpa" IN { // define the reverse zone
+        type master;
+        file "/etc/bind/zones/laranjeira.xyz.rev";
+        allow-update { key "ddns-key"; };
+};

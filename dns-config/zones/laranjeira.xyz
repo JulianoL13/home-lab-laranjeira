@@ -1,0 +1,15 @@
+;
+; BIND data file for local loopback interface
+;
+$TTL    604800
+@       IN      SOA     laranjeira.xyz. root.laranjeira.xyz. (
+                              3         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      dns.laranjeira.xyz.
+dns     IN      A       192.168.0.133
+proxmox IN      A       192.168.0.132
+@       IN      AAAA    ::1
