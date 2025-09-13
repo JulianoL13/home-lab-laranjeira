@@ -15,62 +15,82 @@ variable "pm_password" {
 }
 
 variable "name" {
-  type = string
+  description = "The name of the VM in Proxmox"
+  type        = string
 }
 
 variable "vmid" {
-  type = number
+  description = "Unique VM ID in Proxmox"
+  type        = number
 }
 
 variable "cores" {
-  type = number
+  description = "CPU cores"
+  type        = number
 }
 
 variable "memory" {
-  type = number
+  description = "RAM in MB"
+  type        = number
 }
 
 variable "disk_size" {
-  type = string
+  description = "Disk size with unit"
+  type        = string
 }
 
 variable "storage" {
-  type = string
+  description = "Proxmox storage name"
+  type        = string
 }
 
 variable "bridge" {
-  type = string
+  description = "Network bridge"
+  type        = string
 }
 
 variable "ip_address" {
-  type = string
+  description = "Static IP"
+  type        = string
 }
 
 variable "cidr" {
-  type = number
+  description = "Subnet mask"
+  type        = number
 }
 
 variable "gateway" {
-  type = string
+  description = "Network gateway"
+  type        = string
 }
 
 variable "ssh_key" {
-  type = string
+  description = "Public SSH key"
+  type        = string
 }
 
 variable "user" {
-  type = string
+  description = "Username to create"
+  type        = string
 }
 
 variable "image_url" {
-  type = string
+  description = "Cloud image download URL"
+  type        = string
 }
 
 variable "image_name" {
-  type = string
+  description = "Local image filename"
+  type        = string
+}
+
+variable "image_sha256" {
+  description = "SHA256 checksum of the cloud image"
+  type        = string
 }
 
 variable "net_name" {
-  type    = string
-  default = "ens18"
+  description = "Network interface name"
+  type        = string
+  default     = "ens18"
 }

@@ -18,7 +18,27 @@ locals {
 
 resource "null_resource" "vm" {
   triggers = {
-    vmid = var.vmid
+    config = sha1(jsonencode({
+      vmid         = var.vmid
+      name         = var.name
+      cores        = var.cores
+      memory       = var.memory
+      disk_size    = var.disk_size
+      storage      = var.storage
+      bridge       = var.bridge
+      ip_address   = var.ip_address
+      cidr         = var.cidr
+      gateway      = var.gateway
+      ssh_key      = var.ssh_key
+      user         = var.user
+      image_url    = var.image_url
+      image_name   = var.image_name
+      image_sha256 = var.image_sha256
+      net_name     = var.net_name
+      pm_host      = var.pm_host
+      pm_user      = var.pm_user
+      pm_password  = var.pm_password
+    }))
   }
 
   provisioner "file" {
@@ -41,8 +61,8 @@ resource "null_resource" "vm" {
       "set -e",
       "ISO_DIR=/var/lib/vz/template/iso",
       "IMG=$ISO_DIR/${var.image_name}",
-      "[ -f \"$IMG\" ] || wget -O \"$IMG\" ${var.image_url}",
-      "qm destroy ${var.vmid} --purge || true",
+        "[ -f \"$IMG\" ] || (wget --secure-protocol=TLSv1_2 -O \"$IMG\" ${var.image_url} && echo \"${var.image_sha256}  $IMG\" | sha256sum -c -)",
+        "(qm status ${var.vmid} >/dev/null 2>&1 && qm destroy ${var.vmid} --purge) || echo 'VM ${var.vmid} does not exist, skipping destroy'",
       "qm create ${var.vmid} --name ${var.name} --memory ${var.memory} --cores ${var.cores} --net0 virtio,bridge=${var.bridge} --scsihw virtio-scsi-pci",
       "qm importdisk ${var.vmid} $IMG ${var.storage}",
       "qm set ${var.vmid} --scsi0 ${var.storage}:vm-${var.vmid}-disk-0",

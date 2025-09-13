@@ -25,6 +25,7 @@ module "vm_qemu" {
   user         = "debian"
   image_url    = "https://cloud-images.debian.org/debian-12-genericcloud-amd64.qcow2"
   image_name   = "debian-12-genericcloud-amd64.qcow2"
+  image_sha256 = "<sha256>"
 }
 ```
 
@@ -67,6 +68,7 @@ module "vm_qemu" {
   user        = "debian"
   image_url   = "https://cloud-images.debian.org/debian-12-genericcloud-amd64.qcow2"
   image_name  = "debian-12-genericcloud-amd64.qcow2"
+  image_sha256 = "<sha256>"
 }
 ```
 
