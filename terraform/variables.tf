@@ -18,7 +18,6 @@ variable "pm_password" {
 variable "pm_api_token_id" {
   description = "Proxmox API token ID"
   type        = string
-  sensitive   = true
   default     = null
 }
 
