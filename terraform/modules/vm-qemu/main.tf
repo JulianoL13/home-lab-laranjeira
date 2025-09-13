@@ -74,9 +74,9 @@ resource "null_resource" "vm" {
   }
 
   connection {
-    type     = "ssh"
-    host     = var.pm_host
-    user     = var.pm_user
-    password = var.pm_password
+    type        = "ssh"
+    host        = var.pm_host
+    user        = var.pm_user
+    private_key = var.ssh_private_key
   }
 }
