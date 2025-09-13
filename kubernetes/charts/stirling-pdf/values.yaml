@@ -1,0 +1,13 @@
+replicaCount: 1
+image:
+  repository: frooodle/s-pdf
+  tag: "latest"
+  pullPolicy: IfNotPresent
+service:
+  port: 80
+  targetPort: 8080
+ingress:
+  className: nginx
+  host: pdf.laranjeiralab.com
+  path: /
+  pathType: Prefix

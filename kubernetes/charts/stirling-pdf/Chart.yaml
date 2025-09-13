@@ -1,0 +1,6 @@
+apiVersion: v2
+name: stirling-pdf
+description: Chart simples do Stirling PDF para homelab
+type: application
+version: 0.1.0
+appVersion: "latest"
