@@ -18,6 +18,12 @@ variable "ostemplate" {
   type        = string
 }
 
+variable "description" {
+  description = "Descrição do container"
+  type        = string
+  default     = "Container criado via Terraform"
+}
+
 variable "rootfs_storage" {
   description = "Storage onde o rootfs será criado"
   type        = string

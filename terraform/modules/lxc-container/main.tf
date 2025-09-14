@@ -2,38 +2,58 @@ locals {
   ip_with_cidr = "${var.ip_address}/${var.cidr}"
 }
 
-resource "proxmox_lxc" "container" {
-  hostname     = var.hostname
-  vmid         = var.vmid
-  target_node  = var.target_node
-  ostemplate   = var.ostemplate
-  password     = var.password
+resource "proxmox_virtual_environment_container" "container" {
+  description  = var.description
+  node_name    = var.target_node
+  vm_id        = var.vmid
   unprivileged = var.unprivileged
 
-  cores  = var.cores
-  memory = var.memory
-  swap   = var.swap
-
-  rootfs {
-    storage = var.rootfs_storage
-    size    = var.rootfs_size
+  cpu {
+    cores = var.cores
   }
 
-  network {
-    name   = var.net_name
-    bridge = var.bridge
-    ip     = local.ip_with_cidr
-    gw     = var.gateway
+  memory {
+    dedicated = var.memory
+    swap      = var.swap
   }
 
-  dynamic "mountpoint" {
+  disk {
+    datastore_id = var.rootfs_storage
+    size         = var.rootfs_size
+  }
+
+  network_interface {
+    name    = var.net_name
+    bridge  = var.bridge
+    enabled = true
+
+    ip_config {
+      ipv4 {
+        address = local.ip_with_cidr
+        gateway = var.gateway
+      }
+    }
+  }
+
+  operating_system {
+    template_file_id = var.ostemplate
+    type             = "ubuntu"
+  }
+
+  initialization {
+    hostname = var.hostname
+
+    user_account {
+      password = var.password
+    }
+  }
+
+  dynamic "mount_point" {
     for_each = var.mounts
     content {
-      slot    = mountpoint.value.slot
-      storage = mountpoint.value.storage
-      mp      = mountpoint.value.mp
-      size    = mountpoint.value.size
-      volume  = try(mountpoint.value.volume, null)
+      volume = mount_point.value.volume
+      path   = mount_point.value.mp
+      size   = mount_point.value.size
     }
   }
 }

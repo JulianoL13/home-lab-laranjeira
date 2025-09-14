@@ -35,21 +35,31 @@ resource "proxmox_virtual_environment_vm" "template" {
 
   cpu {
     cores = var.cores
+    type  = "host"
   }
 
   memory {
     dedicated = var.memory
   }
 
+  agent {
+    enabled = true
+  }
+
+  boot_order = ["scsi0"]
+
+  scsi_hardware = "virtio-scsi-pci"
+
   disk {
     datastore_id = var.storage
     interface    = "scsi0"
     import_from  = proxmox_virtual_environment_download_file.cloud_image.id
-    size         = var.disk_size
+    size         = "${var.disk_size}G"
   }
 
   network_device {
     bridge = var.bridge
+    model  = "virtio"
   }
 
   initialization {
@@ -60,6 +70,11 @@ resource "proxmox_virtual_environment_vm" "template" {
         address = local.ip_with_cidr
         gateway = var.gateway
       }
+    }
+
+    user_account {
+      username = var.user
+      keys     = [var.ssh_key]
     }
   }
 }
