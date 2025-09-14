@@ -1,17 +1,6 @@
-variable "pm_host" {
-  description = "Host do Proxmox para conexão SSH"
+variable "node_name" {
+  description = "Proxmox node name"
   type        = string
-}
-
-variable "pm_user" {
-  description = "Usuário SSH"
-  type        = string
-}
-
-variable "pm_password" {
-  description = "Senha SSH"
-  type        = string
-  sensitive   = true
 }
 
 variable "name" {
@@ -35,8 +24,8 @@ variable "memory" {
 }
 
 variable "disk_size" {
-  description = "Disk size with unit"
-  type        = string
+  description = "Disk size in gigabytes"
+  type        = number
 }
 
 variable "storage" {
@@ -87,10 +76,4 @@ variable "image_name" {
 variable "image_sha256" {
   description = "SHA256 checksum of the cloud image"
   type        = string
-}
-
-variable "net_name" {
-  description = "Network interface name"
-  type        = string
-  default     = "ens18"
 }

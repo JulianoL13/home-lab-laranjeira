@@ -3,80 +3,63 @@ locals {
     user    = var.user
     ssh_key = var.ssh_key
   })
-
-  meta_data = templatefile("${path.module}/templates/meta-data.tpl", {
-    hostname = var.name
-  })
-
-  network_config = templatefile("${path.module}/templates/network-config.tpl", {
-    net_name   = var.net_name
-    ip_address = var.ip_address
-    cidr       = var.cidr
-    gateway    = var.gateway
-  })
+  ip_with_cidr = "${var.ip_address}/${var.cidr}"
 }
 
-resource "null_resource" "vm" {
-  triggers = {
-    config = sha1(jsonencode({
-      vmid         = var.vmid
-      name         = var.name
-      cores        = var.cores
-      memory       = var.memory
-      disk_size    = var.disk_size
-      storage      = var.storage
-      bridge       = var.bridge
-      ip_address   = var.ip_address
-      cidr         = var.cidr
-      gateway      = var.gateway
-      ssh_key      = var.ssh_key
-      user         = var.user
-      image_url    = var.image_url
-      image_name   = var.image_name
-      image_sha256 = var.image_sha256
-      net_name     = var.net_name
-      pm_host      = var.pm_host
-      pm_user      = var.pm_user
-      pm_password  = var.pm_password
-    }))
+resource "proxmox_virtual_environment_download_file" "cloud_image" {
+  content_type       = "import"
+  datastore_id       = var.storage
+  node_name          = var.node_name
+  url                = var.image_url
+  file_name          = var.image_name
+  checksum           = var.image_sha256
+  checksum_algorithm = "sha256"
+}
+
+resource "proxmox_virtual_environment_file" "cloud_config" {
+  content_type = "snippets"
+  datastore_id = var.storage
+  node_name    = var.node_name
+
+  source_raw {
+    data      = local.user_data
+    file_name = "${var.name}-cloud-config.yaml"
+  }
+}
+
+resource "proxmox_virtual_environment_vm" "template" {
+  name      = var.name
+  vm_id     = var.vmid
+  node_name = var.node_name
+  template  = true
+
+  cpu {
+    cores = var.cores
   }
 
-  provisioner "file" {
-    content     = local.user_data
-    destination = "/tmp/${var.name}-user-data"
+  memory {
+    dedicated = var.memory
   }
 
-  provisioner "file" {
-    content     = local.meta_data
-    destination = "/tmp/${var.name}-meta-data"
+  disk {
+    datastore_id = var.storage
+    interface    = "scsi0"
+    import_from  = proxmox_virtual_environment_download_file.cloud_image.id
+    size         = var.disk_size
   }
 
-  provisioner "file" {
-    content     = local.network_config
-    destination = "/tmp/${var.name}-network-config"
+  network_device {
+    bridge = var.bridge
   }
 
-  provisioner "remote-exec" {
-    inline = [
-      "set -e",
-      "ISO_DIR=/var/lib/vz/template/iso",
-      "IMG=$ISO_DIR/${var.image_name}",
-        "[ -f \"$IMG\" ] || (wget --secure-protocol=TLSv1_2 -O \"$IMG\" ${var.image_url} && echo \"${var.image_sha256}  $IMG\" | sha256sum -c -)",
-        "(qm status ${var.vmid} >/dev/null 2>&1 && qm destroy ${var.vmid} --purge) || echo 'VM ${var.vmid} does not exist, skipping destroy'",
-      "qm create ${var.vmid} --name ${var.name} --memory ${var.memory} --cores ${var.cores} --net0 virtio,bridge=${var.bridge} --scsihw virtio-scsi-pci",
-      "qm importdisk ${var.vmid} $IMG ${var.storage}",
-      "qm set ${var.vmid} --scsi0 ${var.storage}:vm-${var.vmid}-disk-0",
-      "qm resize ${var.vmid} scsi0 ${var.disk_size}",
-      "cloud-localds $ISO_DIR/${var.name}-seed.iso /tmp/${var.name}-user-data /tmp/${var.name}-meta-data --network-config=/tmp/${var.name}-network-config",
-      "qm set ${var.vmid} --boot c --bootdisk scsi0 --ide2 local:iso/${var.name}-seed.iso,media=cdrom --serial0 socket --vga serial0",
-      "qm start ${var.vmid}"
-    ]
-  }
+  initialization {
+    user_data_file_id = proxmox_virtual_environment_file.cloud_config.id
 
-  connection {
-    type        = "ssh"
-    host        = var.pm_host
-    user        = var.pm_user
-    private_key = var.ssh_private_key
+    ip_config {
+      ipv4 {
+        address = local.ip_with_cidr
+        gateway = var.gateway
+      }
+    }
   }
 }
