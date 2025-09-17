@@ -27,8 +27,6 @@ runcmd:
 ssh_pwauth: false
 disable_root: true
 
-# Configurações de timezone
 timezone: America/Sao_Paulo
 
-# Configurações de locale
 locale: pt_BR.UTF-8
