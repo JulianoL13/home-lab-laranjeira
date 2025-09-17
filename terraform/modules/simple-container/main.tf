@@ -25,13 +25,6 @@ resource "proxmox_virtual_environment_container" "container" {
     name    = "eth0"
     bridge  = var.bridge
     enabled = true
-
-    ip_config {
-      ipv4 {
-        address = local.ip_with_cidr
-        gateway = var.gateway
-      }
-    }
   }
 
   operating_system {
@@ -41,6 +34,13 @@ resource "proxmox_virtual_environment_container" "container" {
 
   initialization {
     hostname = var.name
+
+    ip_config {
+      ipv4 {
+        address = local.ip_with_cidr
+        gateway = var.gateway
+      }
+    }
 
     user_account {
       password = var.password

@@ -1,26 +1,37 @@
-# Configurações do Proxmox
-pm_api_url   = "https://192.168.1.100:8006/api2/json"
-pm_user      = "root@pam"
-pm_password  = "sua_senha_aqui"
+# =============================================================================
+# HOMELAB TERRAFORM CONFIGURATION
+# =============================================================================
 
-# Ou use API token (mais seguro)
-# pm_api_token_id     = "root@pam!terraform"
-# pm_api_token_secret = "seu_token_secreto_aqui"
+# Proxmox connection settings
+pm_api_url = "https://192.168.1.100:8006/api2/json"
+pm_user    = "root@pam"
 
-# Configurações do cluster
-cluster_name  = "pve"
-template_name = "ubuntu-template"
+# SECURITY RECOMMENDATION: Use environment variables instead of hardcoding credentials
+# For password authentication:
+#   export TF_VAR_pm_password="your_password_here"
+# For API token authentication (RECOMMENDED):
+#   export TF_VAR_pm_api_token_id="root@pam!terraform"
+#   export TF_VAR_pm_api_token_secret="your-secret-token-here"
 
-# Configurações para os exemplos
-ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7... sua_chave_ssh_aqui"
-lxc_password   = "senha_segura_para_lxc"
+# Infrastructure settings
+node_name       = "pve"
+storage_name    = "Machines"
+bridge_name     = "vmbr0"
+network_gateway = "192.168.0.1"
 
-# Configurações de rede e infraestrutura
-node_name              = "pve"
-storage_name           = "Machines"
-download_storage       = "local"
-snippet_storage        = "local"
-initialization_storage = "local"
-bridge_name            = "vmbr0"
-network_gateway        = "192.168.1.1"
-base_ip_range          = "192.168.1"
+# SSH public key for VM access
+# Replace with your actual public key from ~/.ssh/id_rsa.pub
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... your_ssh_key_here"
+
+# SECURITY RECOMMENDATION: Use environment variable for container password
+# export TF_VAR_lxc_password="your_secure_container_password"
+
+# =============================================================================
+# IMPORTANT SECURITY NOTES:
+# =============================================================================
+# 1. NEVER commit this file with real credentials to version control
+# 2. Use environment variables for sensitive values
+# 3. Consider using API tokens instead of passwords
+# 4. Keep this file in .gitignore
+# 5. Use strong, unique passwords
+# =============================================================================
