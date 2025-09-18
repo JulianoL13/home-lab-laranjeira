@@ -9,9 +9,9 @@ variable "node_name" {
 }
 
 variable "ensure_template" {
-  description = "Se deve garantir que o template LXC existe"
+  description = "DESABILITADO: Download automático de template (bug na API Proxmox 9.x). Baixe manualmente: pveam download local ubuntu-24.04-standard_24.04-2_amd64.tar.zst"
   type        = bool
-  default     = true
+  default     = false # Desabilitado devido ao bug HTTP 595 na API query-url-metadata
 }
 
 variable "container_configurations" {
@@ -83,13 +83,13 @@ variable "template_storage" {
 variable "template_url" {
   description = "URL para download do template LXC"
   type        = string
-  default     = "http://download.proxmox.com/images/system/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+  default     = "http://download.proxmox.com/images/system/ubuntu-24.04-standard_24.04-2_amd64.tar.zst"
 }
 
 variable "template_name" {
-  description = "Nome do arquivo do template LXC"
+  description = "Nome do arquivo do template LXC baixado manualmente"
   type        = string
-  default     = "ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+  default     = "ubuntu-24.04-standard_24.04-2_amd64.tar.zst"
 }
 
 variable "bridge" {
@@ -108,7 +108,6 @@ variable "password" {
   sensitive   = true
 }
 
-# Variáveis para valores anteriormente hardcoded
 variable "default_cidr" {
   description = "CIDR padrão para configuração de rede"
   type        = number
@@ -149,4 +148,10 @@ variable "network_interface_enabled" {
   description = "Se a interface de rede deve estar habilitada"
   type        = bool
   default     = true
+}
+
+variable "enable_nesting" {
+  description = "Permite que containers executem Docker/LXD/outros containers (nesting)"
+  type        = bool
+  default     = false
 }

@@ -1,439 +1,184 @@
-# Terraform Homelab - Extensibilidade com Extra Config
+# 🏠 Homelab Infrastructure with Terraform
 
-Este projeto utiliza uma abordagem inovadora para permitir máxima flexibilidade na configuração de recursos Proxmox através de **blocos de configuração extras**.
+Este projeto utiliza Terraform para gerenciar infraestrutura de homelab no Proxmox, criando VMs e containers LXC de forma organizada e reutilizável.
 
-## 🎯 Conceito: Bloco `extra_config`
+## 📋 Pré-requisitos
 
-Os módulos são projetados para aceitar **qualquer propriedade** do provider Proxmox através de um bloco unificado `extra_config`. Isso significa que você pode adicionar configurações avançadas diretamente no `main.tf` principal sem modificar os módulos.
+- **Proxmox VE** 7.0+ configurado e funcionando
+- **Terraform** 1.5.0+ instalado
+- Acesso via **API token** ou usuário/senha ao Proxmox
+- **Storage "Machines"** configurado no Proxmox (ou ajustar variável)
 
-## 📋 Como Funciona
+## 🚀 Quick Start
 
-### 1. Estrutura Base (Implementada)
+### 1. Clonar e Configurar
 
-```terraform
-# locals no módulo
-locals {
-  processed_vms = {
-    for name, config in var.vm_configurations :
-    name => merge({
-      # Defaults estruturados
-      memory     = var.default_memory
-      cores      = var.default_cores
-      disk_size  = var.default_disk_size
-    }, config, {
-      # Valores sempre calculados
-      ip_with_cidr = "${config.ip_address}/${var.default_cidr}"
-      vm_name      = "${var.name_prefix}-${name}"
-      
-      # Bloco de configurações extras
-      extra_config = lookup(config, "extra_config", {})
-    })
-  }
-}
+```bash
+cd terraform/homelab
+cp terraform.tfvars.example terraform.tfvars
+# Editar terraform.tfvars com suas configurações
 ```
 
-### 2. Recursos com Lookup no Bloco
+### 2. Configurar Variáveis
 
-```terraform
-# Resource no módulo
-resource "proxmox_virtual_environment_vm" "vms" {
-  for_each = local.processed_vms
-
-  # Propriedades essenciais
-  name      = each.value.vm_name
-  vm_id     = each.value.vmid
-  node_name = var.node_name
-  
-  # Propriedades do bloco extra_config
-  protection = lookup(each.value.extra_config, "protection", false)
-  bios       = lookup(each.value.extra_config, "bios", "seabios")
-  tags       = lookup(each.value.extra_config, "tags", [])
-  
-  network_device {
-    bridge      = var.bridge
-    model       = var.network_model
-    mac_address = lookup(each.value.extra_config, "mac_address", null)
-    vlan_id     = lookup(each.value.extra_config, "vlan_id", null)
-  }
-}
+```hcl
+# terraform.tfvars
+pm_api_url      = "https://192.168.1.100:8006/api2/json"
+pm_user         = "root@pam"  
+pm_password     = "sua_senha"  # OU usar API token (recomendado)
+node_name       = "seu-node"
+ssh_public_key  = "ssh-ed25519 AAAAB... sua-chave"
+lxc_password    = "senha-containers"
 ```
 
-## 🚀 Uso Prático
+### 3. Executar
 
-### Configuração Básica (Sem extras)
+```bash
+terraform init
+terraform plan
+terraform apply
+```
 
-```terraform
+## 📊 O que será criado
+
+### 🖥️ **VMs Ubuntu 22.04**
+- **homelab-web**: 4GB RAM, 2 cores, 50GB disk (192.168.0.101)
+- **homelab-db**: 2GB RAM, 1 core, 30GB disk (192.168.0.102)  
+- **homelab-cache**: 1GB RAM, 1 core, 20GB disk (192.168.0.103)
+
+### 📦 **Containers LXC Ubuntu**
+- **homelab-web**: 2GB RAM, 2 cores, 10GB disk (192.168.0.201)
+- **homelab-db**: 4GB RAM, 4 cores, 20GB disk (192.168.0.202)
+- **homelab-cache**: 512MB RAM, 1 core, 5GB disk (192.168.0.203)
+
+## 🔧 Configuração Personalizada
+
+### Modificar VMs/Containers
+
+Edite as configurações em `homelab/main.tf`:
+
+```hcl
+# Adicionar nova VM
 vm_configurations = {
-  web = {
-    vmid       = 1001
-    ip_address = "192.168.0.101"
-    memory     = 4096
-    cores      = 2
-    disk_size  = 50
-  }
+  web = { vmid = 1001, ip_address = "192.168.0.101", memory = 4096, cores = 2, disk_size = 50 }
+  db  = { vmid = 1002, ip_address = "192.168.0.102", memory = 2048, cores = 1, disk_size = 30 }
+  # Nova VM
+  monitoring = { vmid = 1004, ip_address = "192.168.0.104", memory = 2048, cores = 2, disk_size = 25 }
 }
 ```
 
-### Configuração Avançada (Com bloco extra_config)
+### Usar API Token (Recomendado)
 
-```terraform
-vm_configurations = {
-  web = {
-    vmid       = 1001
-    ip_address = "192.168.0.101"
-    memory     = 4096
-    cores      = 2
-    disk_size  = 50
-    
-    # Bloco unificado de configurações extras
-    extra_config = {
-      # Sistema
-      protection    = true
-      bios         = "ovmf"
-      machine      = "q35"
-      description  = "Servidor Web de Produção"
-      tags         = ["web", "production"]
-      
-      # Hardware
-      cpu_sockets  = 2
-      disk_cache   = "none"
-      disk_ssd     = true
-      
-      # Rede
-      mac_address  = "02:00:00:00:00:01"
-      vlan_id      = 100
-      
-      # Recursos extras
-      additional_disks = [
-        {
-          datastore_id = "fast-ssd"
-          size         = 100
-          interface    = "scsi1"
-        }
-      ]
-    }
-  },
-  
-  db = {
-    vmid       = 1002
-    ip_address = "192.168.0.102"
-    memory     = 8192
-    cores      = 4
-    disk_size  = 100
-    
-    extra_config = {
-      protection     = true
-      cpu_sockets    = 2
-      disk_iothread  = true
-      memory_shared  = 1024
-      description    = "Database server with high I/O"
-    }
-  }
+```hcl
+# terraform.tfvars
+pm_api_token_id     = "root@pam!terraform"
+pm_api_token_secret = "seu-token-secreto"
+# pm_user e pm_password podem ser omitidos
+```
+
+## 📤 Outputs Disponíveis
+
+Após `terraform apply`, você verá:
+
+```bash
+# IPs para conexão rápida
+vm_ips = {
+  "cache" = "192.168.0.103"
+  "db" = "192.168.0.102"  
+  "web" = "192.168.0.101"
+}
+
+# Comandos SSH prontos
+ssh_connection_commands = {
+  "web" = "ssh ubuntu@192.168.0.101"
+  "db" = "ssh ubuntu@192.168.0.102"
+  "cache" = "ssh ubuntu@192.168.0.103"
 }
 ```
 
-## 🔧 Workflow de Extensão
+## 🏗️ Arquitetura do Projeto
 
-### Passo 1: Adicionar Propriedade no Bloco
-
-```terraform
-# homelab/main.tf
-vm_configurations = {
-  web = {
-    vmid = 1001
-    # ... configurações básicas ...
-    
-    extra_config = {
-      nova_propriedade = "valor"  # ← Nova propriedade no bloco
-    }
-  }
-}
+```
+terraform/
+├── homelab/                    # Configuração principal
+│   ├── main.tf                # Recursos e módulos
+│   ├── variables.tf           # Variáveis de entrada
+│   ├── outputs.tf             # Outputs úteis
+│   ├── versions.tf            # Versões e providers
+│   └── terraform.tfvars       # Seus valores (não commitado)
+├── modules/
+│   ├── common/                # Lógica compartilhada
+│   ├── vm-qemu/              # Módulo para VMs
+│   └── lxc-container/        # Módulo para containers
+└── state/                     # Estado do Terraform
 ```
 
-### Passo 2: Funciona Automaticamente! ✅
+## 🔒 Segurança
 
-O módulo já implementa `lookup()` para as propriedades mais comuns. Se a propriedade não estiver implementada, ela será ignorada silenciosamente.
+### ⚠️ **IMPORTANTE: Não commitar senhas**
 
-### Passo 3: Implementar Lookup (opcional)
-
-Se quiser suporte a uma propriedade específica:
-
-```terraform
-# modules/vm-qemu/main.tf
-resource "proxmox_virtual_environment_vm" "vms" {
-  # ... configurações existentes ...
-  
-  nova_propriedade = lookup(each.value.extra_config, "nova_propriedade", "default")
-  #                         ^                    ^                     ^
-  #                    bloco extra_config   nome da chave        valor padrão
-}
+```bash
+# Adicione ao .gitignore
+echo "terraform.tfvars" >> .gitignore
+echo "*.tfstate*" >> .gitignore  
 ```
 
-### Não precisa modificar:
-- ❌ Variáveis do módulo
-- ❌ Locals ou merge()
-- ❌ Documentação (até você querer)
-- ❌ Outputs
+### Usar Variáveis de Ambiente
 
-## 📚 Propriedades Suportadas/Possíveis
-
-### VM - Propriedades Principais
-```terraform
-# Controle
-protection      = true/false
-on_boot         = true/false
-started         = true/false
-template        = true/false
-
-# Hardware
-bios            = "seabios" | "ovmf"
-machine         = "pc" | "q35"
-cpu_sockets     = number
-cpu_type        = "host" | "x86-64-v2-AES"
-memory_shared   = number (MB)
-
-# Rede
-mac_address     = "02:00:00:00:00:01"
-vlan_id         = number
-network_mtu     = number
-network_firewall = true/false
-
-# Disco
-disk_cache      = "none" | "writethrough" | "writeback"
-disk_ssd        = true/false
-disk_iothread   = true/false
-disk_discard    = true/false
-
-# Metadados
-description     = "string"
-tags            = ["tag1", "tag2"]
+```bash
+export TF_VAR_pm_password="sua_senha"
+export TF_VAR_lxc_password="senha_containers"
+# Remover do terraform.tfvars
 ```
 
-### Blocos Avançados
-```terraform
-# Discos adicionais
-additional_disks = [
-  {
-    datastore_id = "local-lvm"
-    size         = 50
-    interface    = "scsi1"
-    cache        = "none"
-  }
-]
+## 🧹 Limpeza
 
-# Interfaces de rede extras
-additional_networks = [
-  {
-    bridge  = "vmbr1"
-    vlan_id = 200
-    mac     = "02:00:00:00:00:02"
-  }
-]
+```bash
+# Destruir toda infraestrutura
+terraform destroy
+
+# Limpar state local
+rm -rf .terraform/
+rm terraform.tfstate*
 ```
 
-## 🏗️ Estado Atual dos Módulos
+## 🎯 Próximos Passos
 
-### ✅ VM Module (`modules/vm-qemu/`)
-- **Base implementada**: merge() funcional com extra_config
-- **Propriedades extra_config**: 25+ propriedades implementadas
-- **Lookup implementados**: 
-  - Sistema: protection, bios, machine, description, tags
-  - CPU: cpu_sockets, cpu_flags, cpu_architecture  
-  - Memória: memory_floating, memory_shared
-  - Disco: disk_cache, disk_ssd, disk_iothread, disk_discard, etc.
-  - Rede: mac_address, vlan_id, network_mtu, network_firewall
-  - Avançado: additional_disks, additional_networks
+1. **Configurar DNS**: Adicionar entradas para os IPs
+2. **Ansible**: Configurar provisionamento com Ansible
+3. **Monitoring**: Adicionar Prometheus/Grafana
+4. **Backup**: Configurar snapshots automáticos
 
-### ✅ LXC Module (`modules/lxc-container/`)
-- **Base implementada**: merge() funcional com extra_config
-- **Propriedades extra_config**: 15+ propriedades implementadas
-- **Lookup implementados**:
-  - Sistema: protection, description, tags
-  - CPU: cpu_units
-  - Rede: mac_address, vlan_id, network_mtu, network_firewall
-  - DNS: dns_servers, dns_domain
-  - SSH: ssh_keys
-  - Avançado: additional_mount_points, additional_networks
+## 🐛 Troubleshooting
 
-## 📖 Exemplos Completos
+### Erro de Autenticação
+```bash
+# Verificar conectividade
+curl -k https://192.168.1.100:8006/api2/json/access/ticket
 
-### Configuração de Produção
-```terraform
-module "homelab_vms" {
-  source = "../modules/vm-qemu"
-  
-  vm_configurations = {
-    nginx-lb = {
-      vmid        = 1001
-      ip_address  = "192.168.0.101"
-      memory      = 2048
-      cores       = 2
-      disk_size   = 30
-      
-      # Configurações extras para VM
-      extra_config = {
-        protection  = true
-        bios        = "ovmf"
-        mac_address = "02:00:00:00:01:01"
-        tags        = ["loadbalancer", "production", "nginx"]
-        description = "Nginx Load Balancer - Production"
-        disk_cache  = "none"
-        disk_ssd    = true
-      }
-    }
-    
-    db-primary = {
-      vmid        = 1002
-      ip_address  = "192.168.0.102"
-      memory      = 8192
-      cores       = 4
-      disk_size   = 100
-      
-      extra_config = {
-        protection     = true
-        cpu_sockets    = 2
-        disk_iothread  = true
-        mac_address    = "02:00:00:00:01:02"
-        tags           = ["database", "primary", "production"]
-        description    = "PostgreSQL Primary Database"
-        
-        # Discos adicionais para dados
-        additional_disks = [
-          {
-            datastore_id = "fast-ssd"
-            size         = 200
-            interface    = "scsi1"
-            cache        = "none"
-            ssd          = true
-          }
-        ]
-      }
-    }
-  }
-}
-
-module "homelab_containers" {
-  source = "../modules/lxc-container"
-  
-  container_configurations = {
-    web-frontend = {
-      vmid        = 2001
-      ip_address  = "192.168.0.201"
-      memory      = 1024
-      cores       = 2
-      rootfs_size = 15
-      
-      # Configurações extras para Container
-      extra_config = {
-        protection      = true
-        description     = "Frontend Web Container"
-        tags            = ["web", "frontend", "production"]
-        mac_address     = "02:00:00:00:02:01"
-        vlan_id         = 100
-        dns_servers     = ["8.8.8.8", "8.8.4.4"]
-        dns_domain      = "homelab.local"
-        
-        # Mount points adicionais
-        additional_mount_points = [
-          {
-            volume = "nfs-storage:50"
-            path   = "/var/www"
-            backup = true
-          }
-        ]
-      }
-    }
-    
-    redis-cache = {
-      vmid        = 2002
-      ip_address  = "192.168.0.202"
-      memory      = 512
-      cores       = 1
-      rootfs_size = 8
-      
-      extra_config = {
-        description = "Redis Cache Container"
-        tags        = ["cache", "redis"]
-        cpu_units   = 512
-      }
-    }
-  }
-}
+# Testar token
+export PVE_API_TOKEN_ID="root@pam!terraform"
+export PVE_API_TOKEN_SECRET="seu-token"
 ```
 
-### Configuração de Desenvolvimento
-```terraform
-module "homelab_vms" {
-  source = "../modules/vm-qemu"
-  
-  vm_configurations = {
-    dev-web = {
-      vmid       = 1101
-      ip_address = "192.168.0.111"
-      memory     = 1024
-      cores      = 1
-      disk_size  = 20
-      
-      # Configurações de dev (mais relaxadas)
-      protection = false
-      on_boot    = false
-      tags       = ["development", "web"]
-      description = "Development Web Server"
-    }
-  }
-}
+### Storage não encontrado
+```bash
+# Listar storages disponíveis
+pvesm status
 ```
 
-## 🔍 Troubleshooting
-
-### Propriedade não funciona?
-
-1. **Verifique se o lookup() foi implementado no módulo**:
-   ```bash
-   grep -r "nova_propriedade" modules/vm-qemu/
-   ```
-
-2. **Implemente o lookup()**:
-   ```terraform
-   nova_propriedade = lookup(each.value, "nova_propriedade", "default")
-   ```
-
-3. **Teste com terraform plan**:
-   ```bash
-   terraform plan
-   ```
-
-### Debug do merge()
-
-Para verificar o que está sendo processado:
-
-```terraform
-# Adicione um output temporário
-output "debug_processed_vms" {
-  value = local.processed_vms
-}
+### Conflito de VMID
+```bash
+# Listar VMs existentes
+qm list
+pct list
 ```
 
-## 📈 Roadmap
+## 📚 Referências
 
-- [ ] Implementar lookups mais comuns (mac_address, protection, bios)
-- [ ] Criar validações para propriedades críticas
-- [ ] Documentar todos os lookups implementados
-- [ ] Criar exemplos para casos de uso específicos
-- [ ] Implementar testes automatizados
-
-## 🤝 Contribuindo
-
-Para adicionar suporte a uma nova propriedade:
-
-1. **Identifique a propriedade** na [documentação do provider](https://registry.terraform.io/providers/bpg/proxmox/latest/docs)
-2. **Adicione o lookup()** no módulo apropriado
-3. **Teste com uma configuração simples**
-4. **Documente o uso** (opcional)
-5. **Commit com padrão**: `feat: add support for <propriedade>`
+- [Proxmox VE API](https://pve.proxmox.com/wiki/Proxmox_VE_API)
+- [Terraform Proxmox Provider](https://registry.terraform.io/providers/bpg/proxmox/latest)
+- [Cloud-init Ubuntu](https://cloud-init.io/)
 
 ---
-
-**Criado em**: Setembro 2025  
-**Autor**: Homelab Laranjeira  
-**Licença**: MIT
+**🎉 Projeto otimizado com boas práticas do Terraform!**

@@ -120,7 +120,6 @@ variable "image_sha256" {
   default     = ""
 }
 
-# Variáveis para valores anteriormente hardcoded
 variable "default_cidr" {
   description = "CIDR padrão para configuração de rede"
   type        = number
