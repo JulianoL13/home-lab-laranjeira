@@ -1,0 +1,41 @@
+# ===== EXEMPLO DE CONFIGURAÇÃO TERRAFORM =====
+# Copie este arquivo para terraform.tfvars e ajuste os valores
+
+# ===== PROXMOX CONNECTION =====
+pm_api_url = "https://192.168.1.100:8006/api2/json"
+
+# Opção 1: Usuário e senha (não recomendado para produção)
+pm_user     = "root@pam"
+pm_password = "sua_senha_aqui"
+
+# Opção 2: API Token (RECOMENDADO)
+# pm_api_token_secret = "seu-token-secreto-aqui"
+# Quando usar API token, pode comentar pm_user e pm_password
+
+# ===== INFRASTRUCTURE =====
+node_name   = "seu-node-proxmox"
+name_prefix = "homelab"
+
+# ===== NETWORKING =====
+bridge  = "vmbr0"
+gateway = "192.168.0.1"
+
+# ===== VMs =====
+ssh_public_key = "ssh-ed25519 AAAAB3NzaC1lZDI1NTE5AAAAIExampleKeyHere seu-usuario@seu-computador"
+vm_user        = "ubuntu"
+
+# URLs da imagem Ubuntu (opcional - usa padrão se não especificado)
+# vm_image_url  = "https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-amd64.img"
+# vm_image_name = "ubuntu-22.04-server-cloudimg-amd64.img"
+
+# ===== CONTAINERS =====
+lxc_password = "senha-para-containers"
+
+# ===== STORAGE =====
+default_storage  = "machines"  # Ajuste para o nome do seu storage
+snippet_storage  = "machines"  # Storage para cloud-init configs
+template_storage = "local"     # Storage para templates
+
+# ===== CONFIGURAÇÕES AVANÇADAS =====
+# Pular verificação SSL (padrão: true para homelabs)
+pm_tls_insecure = true
