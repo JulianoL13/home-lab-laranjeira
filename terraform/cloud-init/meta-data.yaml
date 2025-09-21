@@ -1,0 +1,29 @@
+# =============================================================================
+# Cloud-Init Meta Data Configuration
+# Dados básicos da instância
+# =============================================================================
+
+# Identificação da instância
+instance-id: ${instance_id}
+local-hostname: ${hostname}
+
+# Dados da nuvem/plataforma
+cloud-name: "proxmox"
+platform: "nocloud"
+
+# Configurações regionais
+region: "homelab"
+availability-zone: "homelab-zone-1"
+
+# Informações adicionais da instância
+public-keys:
+  - ${ssh_public_key}
+
+# Dados customizados para scripts
+homelab:
+  environment: "${environment}"
+  role: "${role}"
+  cluster: "${cluster_name}"
+  node_type: "${node_type}"
+  created_by: "terraform"
+  created_at: "${timestamp}"

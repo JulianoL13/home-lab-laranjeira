@@ -1,0 +1,71 @@
+#cloud-config
+
+# Usuário padrão (necessário para evitar erro "user name not set")
+user: root
+
+# Atualização do sistema
+package_update: true
+package_upgrade: true
+
+# Pacotes essenciais
+packages:
+  - curl
+  - wget
+  - git
+  - vim
+  - htop
+  - openssh-server
+  - docker.io
+  - docker-compose
+  - qemu-guest-agent
+
+# Configuração SSH
+ssh_pwauth: true # Permitir login com senha
+disable_root: false # Permitir login do root
+
+# Configurar usuários com senhas
+users:
+  - name: ${cloud_init_username}
+    gecos: "Cloud User"
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    passwd: ${cloud_init_user_password} # Será sobrescrita pelo chpasswd
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+# Comandos de inicialização
+runcmd:
+  # Configurar senhas simples
+  - echo 'root:${root_password}' | chpasswd
+  - echo '${cloud_init_username}:${cloud_init_user_password}' | chpasswd
+
+  # Garantir que SSH está funcionando
+  - systemctl enable ssh
+  - systemctl restart ssh
+
+  # Resolver problema do systemd-networkd-wait-online
+  - systemctl disable systemd-networkd-wait-online.service
+  - systemctl mask systemd-networkd-wait-online.service
+
+  # Configurar Docker
+  - systemctl enable docker
+  - systemctl start docker
+
+  # Habilitar QEMU Guest Agent
+  - systemctl enable qemu-guest-agent
+  - systemctl start qemu-guest-agent
+
+  # Limpeza
+  - apt-get autoremove -y
+  - apt-get autoclean
+
+# Mensagem final
+final_message: |
+  Sistema configurado!
+
+  Credenciais:
+  - root / ${root_password}
+  - ${cloud_init_username} / ${cloud_init_user_password}
+
+  SSH funcionando na porta 22

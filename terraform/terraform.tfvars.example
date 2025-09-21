@@ -1,0 +1,107 @@
+# =============================================================================
+# Exemplo de configuração para terraform.tfvars
+# Copie este arquivo para terraform.tfvars e ajuste conforme necessário
+# =============================================================================
+
+# =============================================================================
+# Configurações do Proxmox (OBRIGATÓRIAS)
+# =============================================================================
+proxmox_api_url      = "https://pve01:8006/api2/json"
+proxmox_username     = "root@pam"                  # Usuário do Proxmox
+proxmox_password     = "sua_senha_do_proxmox"     # Senha do root
+proxmox_insecure_tls = true                        # true para certificados auto-assinados
+
+# =============================================================================
+# SSH (OBRIGATÓRIAS)
+# =============================================================================
+ssh_username   = "root"
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAA... seu@email.com"  # Substitua pela sua chave pública
+
+# =============================================================================
+# Configurações Básicas do Ambiente
+# =============================================================================
+default_node_name = "pve01"     # Nome do seu nó Proxmox
+storage_name     = "local-lvm"  # ou "local-zfs", "ceph", etc.
+bridge_name      = "vmbr0"
+
+# =============================================================================
+# Templates de Imagens
+# =============================================================================
+vm_template_name        = "debian-12-cloudinit"
+container_template_name = "debian-12-standard"
+
+# URLs das imagens (opcionais - usar padrões se não especificado)
+vm_image_url = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
+vm_image_filename = "debian-12-generic-amd64.qcow2"
+
+container_image_url = "http://download.proxmox.com/images/system/debian-12-standard_12.7-1_amd64.tar.zst"
+container_image_filename = "debian-12-standard_12.7-1_amd64.tar.zst"
+
+# =============================================================================
+# Configurações de VM (opcionais - usar padrões se não especificado)
+# =============================================================================
+
+# VM Agent
+vm_agent_enabled = true
+vm_agent_timeout = "60s"
+
+# CPU
+vm_cpu_type         = "x86-64-v2-AES"
+vm_cpu_architecture = "x86_64"
+
+# Sistema
+vm_bios_type = "seabios"  # ou "ovmf" para UEFI
+vm_os_type   = "l26"      # Linux 2.6+
+
+# Disco
+vm_disk_interface   = "scsi0"
+vm_disk_file_format = "qcow2"
+vm_disk_cache       = "writeback"
+vm_disk_iothread    = true
+
+# Rede
+vm_network_model = "virtio"
+
+# Display
+vm_vga_type = "serial0"
+
+# Comportamento
+vm_started    = true
+vm_on_boot    = true
+vm_protection = false
+
+# =============================================================================
+# Configurações de Container (opcionais)
+# =============================================================================
+
+# Comportamento
+container_started       = true
+container_start_on_boot = true
+container_protection    = false
+container_unprivileged  = true
+
+# Sistema
+container_cpu_architecture = "amd64"
+container_memory_swap      = 0
+container_os_type          = "debian"
+
+# Rede
+container_network_interface = "veth0"
+
+# Features
+container_features_nesting = true
+container_features_fuse    = true
+
+# =============================================================================
+# Cloud-Init
+# =============================================================================
+cloudinit_dns_servers       = ["8.8.8.8", "8.8.4.4"]
+cloudinit_dns_domain        = "homelab.local"
+cloudinit_enable_user_data  = true
+
+# =============================================================================
+# Usuários e Senhas
+# =============================================================================
+cloud_init_username         = "admin"           # Nome do usuário a ser criado
+cloud_init_user_password    = "admin123"        # Senha do usuário
+root_password                = "root123"         # Senha do root
